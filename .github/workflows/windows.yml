@@ -1,4 +1,4 @@
-name: Windows Edge
+name: Windows tests
 on:
   push:
     branches:
@@ -10,11 +10,11 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '20.x'
     - name: Install Browsertime
       run: npm ci
     - name: Install dependencies
@@ -42,6 +42,9 @@ jobs:
       shell: cmd
     - name: Run Chrome test
       run: node bin/browsertime.js -b chrome -n 1 https://www.sitespeed.io/
+      shell: cmd
+    - name: Run Chrome with config file
+      run: node bin/browsertime.js -b chrome https://www.sitespeed.io/ --config test/data/exampleConfig.json 
       shell: cmd
     - name: Run Chrome test for multi pages
       run: node bin/browsertime.js -b chrome -n 1 test/data/navigationscript/simple.cjs

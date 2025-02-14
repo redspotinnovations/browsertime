@@ -8,13 +8,13 @@ on:
     - main
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '20.x'
     - name: Install Firefox
       uses: browser-actions/setup-firefox@latest
       #with:
@@ -40,7 +40,6 @@ jobs:
         python -m pip show Pillow
         python -m pip show pyssim
         python -m pip install virtualenv
-        ./browsertime/visualmetrics.py --check
         sudo modprobe ifb numifbs=1
     - name: Browser versions
       run: |
@@ -85,6 +84,12 @@ jobs:
       run: ./bin/browsertime.js -b chrome --preWarmServer --xvfb http://127.0.0.1:3000/simple/
     - name: Run test with screenshots
       run: ./bin/browsertime.js -b chrome --screenshotLCP --screenshotLS --xvfb http://127.0.0.1:3000/simple/
+    - name: Run test with check network idle in Chrome
+      run: ./bin/browsertime.js -b chrome --pageCompleteCheckNetworkIdle --xvfb http://127.0.0.1:3000/simple/
+    - name: Run test with check network idle in Firefox
+      run: ./bin/browsertime.js -b firefox --pageCompleteCheckNetworkIdle --xvfb http://127.0.0.1:3000/simple/
+    - name: Run test with tcp dump
+      run: ./bin/browsertime.js -b chrome --xvfb http://127.0.0.1:3000/simple/ -n 1 --tcpdump
     - name: Run test with scripting.mjs
       run: ./bin/browsertime.js -b chrome -n 1 --xvfb test/data/scripting/module.mjs
     - name: Run test with scripting.cjs
@@ -93,3 +98,7 @@ jobs:
       run: ./bin/browsertime.js -b chrome -n 1 --xvfb test/data/scripting/common.js --cjs
     - name: Run test with scripting.js
       run: ./bin/browsertime.js -b chrome -n 1 --xvfb test/data/scripting/module.js
+    - name: Test extra profile run Chrome
+      run: ./bin/browsertime.js -b chrome http://127.0.0.1:3000/simple/ -n 1 --viewPort 1000x600 --xvfb  --enableProfileRun
+    - name: Test extra profile run Firefox
+      run: ./bin/browsertime.js -b firefox http://127.0.0.1:3000/simple/ -n 1 --viewPort 1000x600 --xvfb  --enableProfileRun    

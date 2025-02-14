@@ -1,10 +1,10 @@
-FROM sitespeedio/webbrowsers:chrome-115.0-firefox-115.0-edge-114.0 
+FROM sitespeedio/webbrowsers:chrome-133.0-firefox-135.0-edge-132.0
 
 ARG TARGETPLATFORM=linux/amd64
 
-ENV BROWSERTIME_XVFB true
-ENV BROWSERTIME_CONNECTIVITY__ENGINE external
-ENV BROWSERTIME_DOCKER true
+ENV BROWSERTIME_XVFB=true
+ENV BROWSERTIME_CONNECTIVITY__ENGINE=external
+ENV BROWSERTIME_DOCKER=true
 
 COPY docker/webpagereplay/$TARGETPLATFORM/wpr /usr/local/bin/
 COPY docker/webpagereplay/wpr_cert.pem /webpagereplay/certs/

@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 import merge from 'lodash.merge';
-import get from 'lodash.get';
-import set from 'lodash.set';
-import intel from 'intel';
+import { getLogger } from '@sitespeed.io/log';
 import { existsSync, mkdirSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import path from 'node:path';
 import { Engine } from '../lib/core/engine/index.js';
 import {
   findAndParseScripts,
@@ -15,9 +13,10 @@ import { configure } from '../lib/support/logging.js';
 import { parseCommandLine } from '../lib/support/cli.js';
 import { StorageManager } from '../lib/support/storageManager.js';
 import { loadScript } from '../lib/support/engineUtils.js';
+import { setProperty, getProperty } from '../lib/support/util.js';
 import { isAndroidConfigured } from '../lib/android/index.js';
 
-const log = intel.getLogger('browsertime');
+const log = getLogger('browsertime');
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const delay = ms => new Promise(response => setTimeout(response, ms));
 
@@ -25,7 +24,7 @@ async function parseUserScripts(scripts) {
   if (!Array.isArray(scripts)) scripts = [scripts];
   const results = {};
   for (const script of scripts) {
-    const code = await findAndParseScripts(resolve(script), 'custom');
+    const code = await findAndParseScripts(path.resolve(script), 'custom');
     merge(results, code);
   }
   return results;
@@ -40,28 +39,28 @@ async function preWarmServer(urls, options) {
     docker: options.docker,
     headless: options.headless
   };
-  const chromeDevice = get(options, 'chrome.android.deviceSerial');
-  const firefoxDevice = get(options, 'firefox.android.deviceSerial');
-  const safariIos = get(options, 'safari.ios');
-  const safariDeviceName = get(options, 'safari.deviceName');
-  const safariDeviceUDID = get(options, 'safari.deviceUDID ');
+  const chromeDevice = getProperty(options, 'chrome.android.deviceSerial');
+  const firefoxDevice = getProperty(options, 'firefox.android.deviceSerial');
+  const safariIos = getProperty(options, 'safari.ios');
+  const safariDeviceName = getProperty(options, 'safari.deviceName');
+  const safariDeviceUDID = getProperty(options, 'safari.deviceUDID ');
 
   if (isAndroidConfigured(options) && options.browser === 'chrome') {
-    set(preWarmOptions, 'chrome.android.package', 'com.android.chrome');
+    setProperty(preWarmOptions, 'chrome.android.package', 'com.android.chrome');
   }
   if (chromeDevice) {
-    set(preWarmOptions, 'chrome.android.deviceSerial', chromeDevice);
+    setProperty(preWarmOptions, 'chrome.android.deviceSerial', chromeDevice);
   } else if (firefoxDevice) {
-    set(preWarmOptions, 'firefox.android.deviceSerial', firefoxDevice);
+    setProperty(preWarmOptions, 'firefox.android.deviceSerial', firefoxDevice);
   }
 
   if (safariIos) {
-    set(preWarmOptions, 'safari.ios', true);
+    setProperty(preWarmOptions, 'safari.ios', true);
     if (safariDeviceName) {
-      set(preWarmOptions, 'safari.deviceName', safariDeviceName);
+      setProperty(preWarmOptions, 'safari.deviceName', safariDeviceName);
     }
     if (safariDeviceUDID) {
-      set(preWarmOptions, 'safari.deviceUDID', safariDeviceUDID);
+      setProperty(preWarmOptions, 'safari.deviceUDID', safariDeviceUDID);
     }
   }
 
@@ -123,36 +122,24 @@ async function run(urls, options) {
         );
       }
 
-      if (options.enableProfileRun) {
-        log.info('Make one extra run to collect trace information');
-        options.iterations = 1;
-        if (options.browser === 'firefox') {
-          options.firefox.geckoProfiler = true;
-        } else if (options.browser === 'chrome') {
-          options.chrome.timeline = true;
-          options.cpu = true;
-          options.chrome.enableTraceScreenshots = true;
-          options.chrome.traceCategory = [
-            'disabled-by-default-v8.cpu_profiler'
-          ];
-        }
-        options.video = false;
-        options.visualMetrics = false;
-        const traceEngine = new Engine(options);
-        await traceEngine.start();
-        await traceEngine.runMultiple(urls, scriptsByCategory);
-        await traceEngine.stop();
-      }
-
       await Promise.all(saveOperations);
 
-      const resultDirectory = relative(process.cwd(), storageManager.directory);
+      const resultDirectory = path.relative(
+        process.cwd(),
+        storageManager.directory
+      );
 
       // check for errors
-      for (let eachResult of result) {
-        for (let errors of eachResult.errors) {
-          if (errors.length > 0) {
+      // If we have set the exit code in scripts, respect that
+      if (process.exitCode === undefined) {
+        for (let eachResult of result) {
+          if (eachResult.markedAsFailure === 1) {
             process.exitCode = 1;
+          }
+          for (let errors of eachResult.errors) {
+            if (errors.length > 0) {
+              process.exitCode = 1;
+            }
           }
         }
       }
@@ -167,8 +154,45 @@ async function run(urls, options) {
         process.exitCode = 1;
       }
     }
+
+    if (options.enableProfileRun || options.enableVideoRun) {
+      log.info('Make one extra run to collect trace/video information');
+      options.iterations = 1;
+      if (options.enableProfileRun) {
+        if (options.browser === 'firefox') {
+          options.firefox.geckoProfiler = true;
+          options.firefox.collectMozLog = true;
+        } else if (options.browser === 'chrome') {
+          options.chrome.timeline = true;
+          options.cpu = true;
+          options.chrome.enableTraceScreenshots = true;
+          options.chrome.traceCategory = [
+            'disabled-by-default-v8.cpu_profiler'
+          ];
+        }
+      }
+      if (options.enableVideoRun) {
+        if (options.video === true) {
+          log.error(
+            'You can only configure video run if you do not collect any video'
+          );
+          // This is a hack to not get an error
+          options.video = false;
+          options.visualMetrics = false;
+        } else {
+          options.video = true;
+          options.visualMetrics = true;
+        }
+      }
+      const traceEngine = new Engine(options);
+      await traceEngine.start();
+      await traceEngine.runMultiple(urls, scriptsByCategory);
+      await traceEngine.stop();
+      log.info('Extra run finished');
+    }
   } catch (error) {
     log.error('Error running browsertime', error);
+    console.log(error);
     process.exitCode = 1;
   } finally {
     process.exit();

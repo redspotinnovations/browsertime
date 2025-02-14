@@ -1,52 +1,51 @@
 {
   "name": "browsertime",
   "description": "Get performance metrics from your web page using Browsertime.",
-  "version": "17.12.1",
+  "version": "24.2.0",
   "bin": "./bin/browsertime.js",
   "type": "module",
+  "types": "./types/scripting.d.ts",
   "dependencies": {
-    "@cypress/xvfb": "1.2.4",
-    "@devicefarmer/adbkit": "2.11.3",
-    "@sitespeed.io/chromedriver": "115.0.5790-98b",
-    "@sitespeed.io/edgedriver": "114.0.1823-82",
-    "@sitespeed.io/geckodriver": "0.33.0",
-    "@sitespeed.io/throttle": "5.0.0",
+    "@devicefarmer/adbkit": "3.3.8",
+    "@sitespeed.io/chromedriver": "133.0.6943-53",
+    "@sitespeed.io/edgedriver": "132.0.2957-115",
+    "@sitespeed.io/geckodriver": "0.35.0-1",
+    "@sitespeed.io/log": "0.2.6",
+    "@sitespeed.io/throttle": "5.0.1",
     "@sitespeed.io/tracium": "0.3.3",
-    "ff-test-bidi-har-export": "0.0.11",
-    "btoa": "1.2.1",
-    "chrome-har": "0.13.1",
-    "chrome-remote-interface": "0.32.2",
-    "dayjs": "1.11.7",
-    "execa": "7.1.1",
-    "fast-stats": "0.0.6",
-    "find-up": "6.3.0",
-    "get-port": "6.1.2",
-    "hasbin": "1.2.3",
-    "intel": "1.2.0",
-    "lodash.get": "4.4.2",
-    "lodash.groupby": "4.6.0",
-    "lodash.isempty": "4.4.0",
+    "chrome-har": "1.0.1",
+    "chrome-remote-interface": "0.33.2",
+    "execa": "9.5.2",
+    "fast-stats": "0.0.7",
+    "ff-test-bidi-har-export": "0.0.17",
     "lodash.merge": "4.6.2",
-    "lodash.pick": "4.4.0",
-    "lodash.set": "4.3.2",
-    "selenium-webdriver": "4.10.0",
+    "selenium-webdriver": "4.28.1",
     "yargs": "17.7.2"
   },
   "optionalDependencies": {
-    "jimp": "0.22.8"
+    "@jimp/custom": "0.22.12",
+    "@jimp/png": "0.22.12",
+    "@jimp/jpeg": "0.22.12",
+    "@jimp/plugin-resize": "0.22.12",
+    "@jimp/plugin-scale": "0.22.12",
+    "usb-power-profiling": "1.5.0"
   },
   "devDependencies": {
-    "ava": "5.1.0",
-    "eslint": "8.31.0",
-    "eslint-config-prettier": "8.6.0",
-    "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-unicorn": "45.0.2",
-    "prettier": "2.8.2",
-    "serve-handler": "6.1.5",
-    "serve": "14.1.2"
+    "@types/selenium-webdriver": "4.1.25",
+    "ava": "6.2.0",
+    "clean-jsdoc-theme": "4.3.0",
+    "eslint": "9.17.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-prettier": "5.2.1",
+    "eslint-plugin-unicorn": "56.0.1",
+    "jsdoc": "4.0.4",
+    "prettier": "3.4.2",
+    "serve": "14.2.4",
+    "serve-handler": "6.1.6",
+    "typescript": "5.7.2"
   },
   "engines": {
-    "node": ">=14.19.1"
+    "node": ">=18.0.0"
   },
   "files": [
     "CHANGELOG.md",
@@ -56,21 +55,30 @@
     "bin",
     "browserscripts",
     "browsersupport",
-    "browsertime",
+    "visualmetrics/visualmetrics-portable.py",
+    "visualmetrics/visualmetrics.py",
     "browsertime.png",
-    "docs",
     "index.js",
     "lib",
     "package.json",
-    "vendor"
+    "vendor",
+    "types"
   ],
-  "exports": "./index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "types": "./types/scripting.d.ts"
+    }
+  },
   "scripts": {
     "test": "ava",
     "start-server": "serve test/data/html/",
     "stop-server": "sudo pkill serve",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "tsc": "tsc",
+    "jsdoc": "jsdoc --configure jsdoc/jsdoc.json",
+    "prepublishOnly": "npm run lint && npm run tsc"
   },
   "author": "Peter Hedenskog",
   "contributors": [
